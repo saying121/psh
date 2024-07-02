@@ -1,0 +1,12 @@
+[package]
+name = "test-calc"
+edition = "2021"
+version = "0.1.0"
+
+[dependencies]
+wit-bindgen = { version = "0.20.0", default-features = false, features = ["realloc"] }
+
+[package.metadata.component]
+package = "component:test-calc"
+
+[package.metadata.component.dependencies]

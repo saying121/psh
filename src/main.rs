@@ -41,6 +41,7 @@ fn main() -> anyhow::Result<()> {
         .wasi_args(&component_args)
         .allow_perf_op(true)
         .allow_system_op(true)
+        .allow_add_op(true)
         .build()
         .context("Failed to build PshEngine.")?;
 

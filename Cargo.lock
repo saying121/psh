@@ -1061,6 +1061,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "host-op-calc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "wasmtime",
+]
+
+[[package]]
 name = "host-op-perf"
 version = "0.1.0"
 dependencies = [
@@ -1815,6 +1823,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "host-op-calc",
  "host-op-perf",
  "host-op-system",
  "libc",

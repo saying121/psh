@@ -1,0 +1,12 @@
+[package]
+name = "test-get-os"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wit-bindgen = { version = "0.27.0", default-features = false, features = ["realloc"] }
+
+[package.metadata.component]
+package = "component:test-get-os"
+
+[package.metadata.component.dependencies]

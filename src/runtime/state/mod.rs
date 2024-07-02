@@ -1,3 +1,4 @@
+use host_op_calc::CalcCtx;
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiView};
 
@@ -11,6 +12,7 @@ pub struct PshState {
     pub(crate) wasi_ctx: WasiCtx,
     pub(crate) perf_ctx: PerfCtx,
     pub(crate) sys_ctx: SysCtx,
+    pub(crate) calc_ctx: CalcCtx,
     // TODO: add more context for modules
 }
 

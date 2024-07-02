@@ -1,0 +1,8 @@
+[package]
+name              = "host-op-calc"
+edition           = "2021"
+version.workspace = true
+
+[dependencies]
+wasmtime = "^21.0.1"
+anyhow = "^1"

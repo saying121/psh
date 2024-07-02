@@ -1,4 +1,5 @@
 use anyhow::Context;
+use host_op_calc::CalcCtx;
 use wasmtime::{
     component::{Linker, ResourceTable},
     Config, Engine, Store,
@@ -16,6 +17,7 @@ pub struct PshEngineBuilder {
     engine_config: Config,
     use_perf_op: bool,
     use_system_op: bool,
+    use_add_op: bool,
 }
 
 #[allow(dead_code)]
@@ -28,6 +30,7 @@ impl PshEngineBuilder {
             engine_config,
             use_perf_op: false,
             use_system_op: false,
+            use_add_op: false,
         }
     }
 
@@ -40,6 +43,7 @@ impl PshEngineBuilder {
             wasi_ctx,
             perf_ctx: PerfCtx::new(),
             sys_ctx: SysCtx::default(),
+            calc_ctx: CalcCtx::default(),
         };
         let store = Store::new(&engine, state);
         let mut linker: Linker<PshState> = Linker::new(&engine);
@@ -52,6 +56,10 @@ impl PshEngineBuilder {
         if self.use_system_op {
             host_op_system::add_to_linker(&mut linker, |state| &mut state.sys_ctx)
                 .context("Failed to link system module")?;
+        }
+        if self.use_add_op {
+            host_op_calc::add_to_linker(&mut linker, |state| &mut state.calc_ctx)
+                .context("Failed to link calc module")?;
         }
         Ok(PshEngine {
             engine,
@@ -141,6 +149,10 @@ impl PshEngineBuilder {
 
     pub fn allow_system_op(mut self, enable: bool) -> Self {
         self.use_system_op = enable;
+        self
+    }
+    pub fn allow_add_op(mut self, enable: bool) -> Self {
+        self.use_add_op = enable;
         self
     }
 }
