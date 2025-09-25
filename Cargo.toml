@@ -89,7 +89,7 @@ local-ip-address = "^0.6"
 TinyUFO = "0.4"
 crossbeam = "0.8"
 influxdb-line-protocol = "2"
-psh-proto = { git = "ssh://git@github.com/OptimatistOpenSource/psh-proto.git", rev = "17c48f6818eb0ff49070a6990a1b14e3a13b2c87" }
+psh-proto = { git = "https://github.com/OptimatistOpenSource/psh-proto.git", rev = "17c48f6818eb0ff49070a6990a1b14e3a13b2c87" }
 mimalloc = "0.1"
 nvml-wrapper = "0.10.0"
 

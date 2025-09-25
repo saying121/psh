@@ -39,7 +39,8 @@ pub use state::PshState;
 
 use crate::services::rpc::RpcClient;
 
-pub struct Task {
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct WasmTask {
     pub id: Option<String>,
     pub wasm_component: Vec<u8>,
     pub wasm_component_args: Vec<String>,
@@ -47,8 +48,8 @@ pub struct Task {
 }
 
 pub struct TaskRuntime {
-    tx: Sender<Task>,
-    rx: Option<Receiver<Task>>,
+    tx: Sender<WasmTask>,
+    rx: Option<Receiver<WasmTask>>,
     len: Arc<AtomicUsize>,
     finished_task_id: Arc<Mutex<Vec<String>>>,
 }
@@ -65,7 +66,7 @@ impl TaskRuntime {
         })
     }
 
-    pub fn schedule(&self, task: Task) -> Result<()> {
+    pub fn schedule(&self, task: WasmTask) -> Result<()> {
         self.len.fetch_add(1, Ordering::Release);
         self.tx.send(task)?;
         Ok(())

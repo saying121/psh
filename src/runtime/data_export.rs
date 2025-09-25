@@ -26,7 +26,10 @@ use profiling::data_export::{
     common::FieldValue as WitFieldValue, measurement::Point, metric::Sample,
 };
 use prost::Message;
-use psh_proto::{Data, DataType, ExportDataReq};
+use psh_proto::{
+    ExportDataReq, LineProtocolData,
+    export_data_req::{Data, data::DataType},
+};
 use wasmtime::component::Linker;
 
 use crate::{TOKIO_RUNTIME, services::rpc::RpcClient};
@@ -172,8 +175,7 @@ impl profiling::data_export::file::Host for DataExportCtx {
         };
 
         let data = Data {
-            ty: DataType::File as _,
-            bytes,
+            data_type: Some(DataType::File(psh_proto::FileData { bytes })),
         };
         ctx.exporter.schedule(data);
 
@@ -201,8 +203,7 @@ impl profiling::data_export::metric::Host for DataExportCtx {
         };
 
         let data = Data {
-            ty: DataType::LineProtocol as _,
-            bytes,
+            data_type: Some(DataType::LineProtocol(LineProtocolData { bytes })),
         };
         ctx.exporter.schedule(data);
 
@@ -238,8 +239,7 @@ impl profiling::data_export::measurement::Host for DataExportCtx {
         };
 
         let data = Data {
-            ty: DataType::LineProtocol as _,
-            bytes,
+            data_type: Some(DataType::LineProtocol(LineProtocolData { bytes })),
         };
         ctx.exporter.schedule(data);
 

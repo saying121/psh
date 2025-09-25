@@ -32,10 +32,15 @@ use log::log_init;
 use mimalloc::MiMalloc;
 use nix::unistd::geteuid;
 use opentelemetry_otlp::ExportConfig;
-use psh_proto::HeartbeatReq;
-use runtime::{Task, TaskRuntime};
+use psh_proto::{
+    HeartbeatReq, PerfDataProto,
+    export_data_req::{Data, data::DataType},
+};
+use runtime::{TaskRuntime, WasmTask};
 use services::rpc::RpcClient;
 use tokio::{runtime::Runtime, try_join};
+
+use self::services::{rpc::WhichTask, sampling::Profiler};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = mimalloc::MiMalloc;
@@ -86,7 +91,7 @@ fn main() -> Result<()> {
     let task_rt = TaskRuntime::new()?;
 
     if let Some(args) = wasm_with_args {
-        let task = Task {
+        let task = WasmTask {
             id: None,
             wasm_component: fs::read(&args[0])?,
             wasm_component_args: args,
@@ -143,14 +148,52 @@ async fn async_tasks(remote_cfg: RemoteConfig, mut task_rt: TaskRuntime) -> Resu
         loop {
             let idle = task_rt.is_idle();
             if idle {
-                if let Some(mut task) = client.get_task(instance_id.clone()).await? {
-                    let task_id = task
-                        .id
-                        .as_ref()
-                        .map(|it| it.to_string())
-                        .expect("No task id provided");
-                    task.wasm_component_args.insert(0, task_id);
-                    task_rt.schedule(task)?
+                if let Some(task) = client.get_task(instance_id.clone()).await? {
+                    match task {
+                        WhichTask::Wasm(mut task) => {
+                            let task_id = task
+                                .id
+                                .as_ref()
+                                .map(|it| it.to_string())
+                                .expect("No task id provided");
+                            task.wasm_component_args.insert(0, task_id);
+                            task_rt.schedule(task)?;
+                        }
+                        WhichTask::Profiling(profiling_task) => {
+                            let mut profiler = Profiler::new(
+                                profiling_task.process,
+                                profiling_task.mmap_pages as _,
+                                profiling_task.overflow_by,
+                                profiling_task.stack_depth,
+                            )?;
+                            let task_time_slice = {
+                                let delta = profiling_task.end_time.timestamp_millis()
+                                    - Utc::now().timestamp_millis();
+                                delta.max(0) as u64
+                            };
+
+                            let perf_data = tokio::task::spawn_blocking(
+                                move || -> anyhow::Result<PerfDataProto> {
+                                    profiler.enable()?;
+                                    std::thread::sleep(Duration::from_millis(task_time_slice));
+                                    profiler.disable()?;
+                                    Ok(profiler.perf_data_proto())
+                                },
+                            )
+                            .await??;
+                            if let Some(task_id) = profiling_task.id {
+                                let data = Data {
+                                    data_type: Some(DataType::PerfData(perf_data)),
+                                };
+                                client
+                                    .export_data(psh_proto::ExportDataReq {
+                                        task_id,
+                                        data: vec![data],
+                                    })
+                                    .await?;
+                            }
+                        }
+                    };
                 }
             }
 

@@ -13,7 +13,10 @@
 // see <https://www.gnu.org/licenses/>.
 
 use anyhow::{Result, bail};
+use chrono::DateTime;
 use chrono::{TimeZone, Utc, offset::LocalResult};
+use perf_event_rs::sampling::OverflowBy;
+use psh_proto::task::TaskType;
 use psh_proto::{
     ExportDataReq, GetTaskReq, HeartbeatReq, TaskDoneReq, Unit,
     psh_service_client::PshServiceClient,
@@ -26,7 +29,7 @@ use tonic::{
     transport::{Channel, ClientTlsConfig, Endpoint},
 };
 
-use crate::{config::RpcConfig, runtime::Task, services::host_info::new_info_req};
+use crate::{config::RpcConfig, runtime::WasmTask, services::host_info::new_info_req};
 
 #[derive(Clone)]
 pub struct RpcClient {
@@ -78,6 +81,20 @@ where
             }
         }
     }
+}
+
+pub enum WhichTask {
+    Wasm(WasmTask),
+    Profiling(ProfilingTask),
+}
+
+pub struct ProfilingTask {
+    pub id: Option<String>,
+    pub process: perf_event_rs::config::Process,
+    pub mmap_pages: u64,
+    pub overflow_by: OverflowBy,
+    pub stack_depth: Option<u16>,
+    pub end_time: DateTime<Utc>,
 }
 
 impl RpcClient {
@@ -132,7 +149,7 @@ impl RpcClient {
         Ok(())
     }
 
-    pub async fn get_task(&mut self, instance_id: String) -> Result<Option<Task>> {
+    pub async fn get_task(&mut self, instance_id: String) -> Result<Option<WhichTask>> {
         let get_task_req = GetTaskReq { instance_id };
         let token = &self.token;
 
@@ -142,20 +159,41 @@ impl RpcClient {
             self.client.get_task(req).await
         })
         .await?;
-        let task = match response.into_inner().task {
-            Some(task) => task,
-            None => return Ok(None),
+        let Some(task): Option<psh_proto::Task> = response.into_inner().task else {
+            return Ok(None);
         };
 
-        let end_time = match Utc.timestamp_millis_opt(task.end_time as _) {
-            LocalResult::Single(t) => t,
-            _ => bail!("Invalid task end time"),
+        let LocalResult::Single(end_time) = Utc.timestamp_millis_opt(task.end_time as _) else {
+            bail!("Invalid task end time")
         };
-        let task = Task {
-            id: Some(task.id),
-            wasm_component: task.wasm,
-            wasm_component_args: task.wasm_args,
-            end_time,
+        let Some(task_type) = task.task_type else {
+            return Ok(None);
+        };
+
+        let task = match task_type {
+            TaskType::Profiling(profiling_task) => {
+                let Some(process) = profiling_task.process else {
+                    return Ok(None);
+                };
+                let Some(overflow_by) = profiling_task.overflow_by else {
+                    return Ok(None);
+                };
+                let process: perf_event_rs::config::Process = process.into();
+                WhichTask::Profiling(ProfilingTask {
+                    id: task.id.into(),
+                    process,
+                    mmap_pages: profiling_task.mmap_pages,
+                    overflow_by: overflow_by.into(),
+                    stack_depth: profiling_task.stack_depth.map(|v| v as _),
+                    end_time,
+                })
+            }
+            TaskType::Wasm(wasm_task) => WhichTask::Wasm(WasmTask {
+                id: Some(task.id),
+                wasm_component: wasm_task.wasm,
+                wasm_component_args: wasm_task.wasm_args,
+                end_time,
+            }),
         };
 
         Ok(Some(task))
