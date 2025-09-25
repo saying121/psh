@@ -2099,7 +2099,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 [[package]]
 name = "perf-event-rs"
 version = "0.0.0"
-source = "git+https://github.com/OptimatistOpenSource/perf-event-rs.git?rev=423ca26f53b27193d2321028dae5fd362a9673e9#423ca26f53b27193d2321028dae5fd362a9673e9"
+source = "git+https://github.com/OptimatistOpenSource/perf-event-rs.git?rev=d6881f34b8a9cde1d70dab5fb1415271e6b0bb25#d6881f34b8a9cde1d70dab5fb1415271e6b0bb25"
 dependencies = [
  "bindgen",
  "libc",
@@ -2290,10 +2290,12 @@ dependencies = [
  "local-ip-address",
  "mimalloc",
  "nix",
+ "num_cpus",
  "nvml-wrapper",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
+ "perf-event-rs",
  "prost",
  "psh-proto",
  "psh-system",
@@ -2310,9 +2312,11 @@ dependencies = [
 [[package]]
 name = "psh-proto"
 version = "0.1.0"
-source = "git+https://github.com/OptimatistOpenSource/psh-proto.git?rev=ca2919053029cb584b478611f8bf8496bf3cf7f7#ca2919053029cb584b478611f8bf8496bf3cf7f7"
+source = "git+ssh://git@github.com/OptimatistOpenSource/psh-proto.git?rev=17c48f6818eb0ff49070a6990a1b14e3a13b2c87#17c48f6818eb0ff49070a6990a1b14e3a13b2c87"
 dependencies = [
+ "perf-event-rs",
  "prost",
+ "serde",
  "tonic",
  "tonic-build",
 ]

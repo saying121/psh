@@ -50,6 +50,8 @@ influxdb-line-protocol = { workspace = true }
 psh-proto = { workspace = true }
 mimalloc = { workspace = true }
 nvml-wrapper = { workspace = true }
+perf-event-rs = { workspace = true }
+num_cpus = { workspace = true }
 
 [lints]
 workspace = true
@@ -58,7 +60,7 @@ workspace = true
 host-op-perf = { path = "crates/op/host-op-perf" }
 host-op-system = { path = "crates/op/host-op-system" }
 psh-system = { path = "crates/psh-system" }
-perf-event-rs = { git = "https://github.com/OptimatistOpenSource/perf-event-rs.git", rev = "423ca26f53b27193d2321028dae5fd362a9673e9" }
+perf-event-rs = { git = "https://github.com/OptimatistOpenSource/perf-event-rs.git", rev = "d6881f34b8a9cde1d70dab5fb1415271e6b0bb25" }
 tokio = "^1"
 libc = "^0.2"
 chrono = "^0.4"
@@ -87,7 +89,7 @@ local-ip-address = "^0.6"
 TinyUFO = "0.4"
 crossbeam = "0.8"
 influxdb-line-protocol = "2"
-psh-proto = { git = "https://github.com/OptimatistOpenSource/psh-proto.git", rev = "ca2919053029cb584b478611f8bf8496bf3cf7f7" }
+psh-proto = { git = "ssh://git@github.com/OptimatistOpenSource/psh-proto.git", rev = "17c48f6818eb0ff49070a6990a1b14e3a13b2c87" }
 mimalloc = "0.1"
 nvml-wrapper = "0.10.0"
 
