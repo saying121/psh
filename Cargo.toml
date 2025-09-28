@@ -19,7 +19,7 @@ chrono = { workspace = true }
 clap = { workspace = true, features = ["derive", "wrap_help"] }
 tonic = { workspace = true }
 prost = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "fs"] }
 nix = { workspace = true, features = ["user", "hostname"] }
 wasmtime = { workspace = true }
 wasmtime-wasi = { workspace = true }
@@ -89,7 +89,7 @@ local-ip-address = "^0.6"
 TinyUFO = "0.4"
 crossbeam = "0.8"
 influxdb-line-protocol = "2"
-psh-proto = { git = "https://github.com/OptimatistOpenSource/psh-proto.git", rev = "17c48f6818eb0ff49070a6990a1b14e3a13b2c87" }
+psh-proto = { git = "https://github.com/OptimatistOpenSource/psh-proto.git", rev = "c82356c52925ac0abf9cd93c7245c3518d78e096" }
 mimalloc = "0.1"
 nvml-wrapper = "0.10.0"
 

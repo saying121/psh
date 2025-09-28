@@ -182,14 +182,32 @@ async fn async_tasks(remote_cfg: RemoteConfig, mut task_rt: TaskRuntime) -> Resu
                             )
                             .await??;
                             if let Some(task_id) = profiling_task.id {
-                                let data = Data {
+                                let mut data = vec![];
+                                for ele in &perf_data.events {
+                                    let Some(event_type) = &ele.event_type else {
+                                        continue;
+                                    };
+
+                                    if let psh_proto::perf_data_proto::perf_event::EventType::MmapEvent(event)= event_type{
+                                        let Some(filename) = &event.filename else {
+                                            continue;
+                                        };
+
+                                        let data_type = DataType::ElfFile(psh_proto::ElfFile {
+                                            filename: filename.to_owned(),
+                                            build_id: event.build_id.clone(),
+                                            arch: std::env::consts::ARCH.to_string(),
+                                            bytes: tokio::fs::read(filename).await?
+                                        });
+                                        data.push(Data { data_type: Some(data_type) });
+                                    }
+                                }
+                                let dat = Data {
                                     data_type: Some(DataType::PerfData(perf_data)),
                                 };
+                                data.push(dat);
                                 client
-                                    .export_data(psh_proto::ExportDataReq {
-                                        task_id,
-                                        data: vec![data],
-                                    })
+                                    .export_data(psh_proto::ExportDataReq { task_id, data })
                                     .await?;
                             }
                         }
