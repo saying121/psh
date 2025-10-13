@@ -30,3 +30,6 @@ buf_watermark = 2048
 enable = false
 addr = "https://api.optimatist.com"
 interval = 10
+
+[perms]
+allowed_paths = []

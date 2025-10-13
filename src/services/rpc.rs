@@ -86,6 +86,14 @@ where
 pub enum WhichTask {
     Wasm(WasmTask),
     Profiling(ProfilingTask),
+    UploadElf(UploadElfTask),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UploadElfTask {
+    pub id: String,
+    pub filename: String,
+    pub build_id: Option<String>,
 }
 
 pub struct ProfilingTask {
@@ -194,13 +202,28 @@ impl RpcClient {
                 wasm_component_args: wasm_task.wasm_args,
                 end_time,
             }),
+            TaskType::UploadElf(upload_elf_task) => WhichTask::UploadElf(UploadElfTask {
+                id: task.id,
+                filename: upload_elf_task.filename,
+                build_id: upload_elf_task.build_id,
+            }),
         };
 
         Ok(Some(task))
     }
 
-    pub async fn task_done(&mut self, task_id: String) -> Result<()> {
-        let req = into_req(TaskDoneReq { task_id }, &self.token)?;
+    pub async fn task_done(
+        &mut self,
+        task_id: String,
+        status: psh_proto::task_done_req::TaskStatus,
+    ) -> Result<()> {
+        let req = into_req(
+            TaskDoneReq {
+                task_id,
+                status: status as _,
+            },
+            &self.token,
+        )?;
         self.client.task_done(req).await?;
         Ok(())
     }

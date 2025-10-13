@@ -220,7 +220,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "miniz_oxide",
- "object",
+ "object 0.36.7",
  "rustc-demangle",
  "windows-targets 0.52.6",
 ]
@@ -1953,6 +1953,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "object"
+version = "0.37.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff76201f031d8863c38aa7f905eca4f53abbfa15f609db4277d44cd8938f33fe"
+dependencies = [
+ "flate2",
+ "memchr",
+ "ruzstd",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2292,6 +2303,7 @@ dependencies = [
  "nix",
  "num_cpus",
  "nvml-wrapper",
+ "object 0.37.3",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
@@ -2312,7 +2324,7 @@ dependencies = [
 [[package]]
 name = "psh-proto"
 version = "0.1.0"
-source = "git+https://github.com/OptimatistOpenSource/psh-proto.git?rev=c82356c52925ac0abf9cd93c7245c3518d78e096#c82356c52925ac0abf9cd93c7245c3518d78e096"
+source = "git+https://github.com/OptimatistOpenSource/psh-proto.git?rev=5cf7cc9#5cf7cc987c936dc751d22ee76837b5fefa897677"
 dependencies = [
  "perf-event-rs",
  "prost",
@@ -2674,6 +2686,15 @@ name = "rustversion"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eded382c5f5f786b989652c49544c4877d9f015cc22e145a5ea8ea66c2921cd2"
+
+[[package]]
+name = "ruzstd"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3640bec8aad418d7d03c72ea2de10d5c646a598f9883c7babc160d91e3c1b26c"
+dependencies = [
+ "twox-hash",
+]
 
 [[package]]
 name = "ryu"
@@ -3306,6 +3327,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
+name = "twox-hash"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ea3136b675547379c4bd395ca6b938e5ad3c3d20fad76e7fe85f9e0d011419c"
+
+[[package]]
 name = "typenum"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3565,7 +3592,7 @@ dependencies = [
  "log",
  "mach2",
  "memfd",
- "object",
+ "object 0.36.7",
  "once_cell",
  "paste",
  "postcard",
@@ -3664,7 +3691,7 @@ dependencies = [
  "gimli",
  "itertools 0.12.1",
  "log",
- "object",
+ "object 0.36.7",
  "smallvec",
  "target-lexicon",
  "thiserror 1.0.69",
@@ -3686,7 +3713,7 @@ dependencies = [
  "gimli",
  "indexmap",
  "log",
- "object",
+ "object 0.36.7",
  "postcard",
  "rustc-demangle",
  "semver",
@@ -3721,7 +3748,7 @@ version = "28.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cec0a8e5620ae71bfcaaec78e3076be5b6ebf869f4e6191925d73242224a915"
 dependencies = [
- "object",
+ "object 0.36.7",
  "rustix 0.38.44",
  "wasmtime-versioned-export-macros",
 ]
@@ -3794,7 +3821,7 @@ dependencies = [
  "anyhow",
  "cranelift-codegen",
  "gimli",
- "object",
+ "object 0.36.7",
  "target-lexicon",
  "wasmparser 0.221.3",
  "wasmtime-cranelift",

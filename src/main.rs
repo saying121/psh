@@ -20,7 +20,7 @@ mod otlp;
 mod runtime;
 mod services;
 
-use std::{fs, sync::LazyLock, thread, time::Duration};
+use std::{fs, path::PathBuf, str::FromStr, sync::LazyLock, thread, time::Duration};
 
 use anyhow::{Error, Result, bail};
 use args::Args;
@@ -35,12 +35,16 @@ use opentelemetry_otlp::ExportConfig;
 use psh_proto::{
     HeartbeatReq, PerfDataProto,
     export_data_req::{Data, data::DataType},
+    task_done_req::TaskStatus,
 };
 use runtime::{TaskRuntime, WasmTask};
 use services::rpc::RpcClient;
 use tokio::{runtime::Runtime, try_join};
 
-use self::services::{rpc::WhichTask, sampling::Profiler};
+use self::{
+    config::PermsConfig,
+    services::{rpc::WhichTask, sampling::Profiler},
+};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = mimalloc::MiMalloc;
@@ -101,7 +105,7 @@ fn main() -> Result<()> {
     };
 
     thread::spawn(move || -> Result<()> {
-        let tasks = async_tasks(cfg.remote, task_rt);
+        let tasks = async_tasks(cfg.remote, task_rt, cfg.perms);
         TOKIO_RUNTIME.block_on(tasks)?;
         Ok(())
     })
@@ -111,7 +115,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-async fn async_tasks(remote_cfg: RemoteConfig, mut task_rt: TaskRuntime) -> Result<()> {
+async fn async_tasks(
+    remote_cfg: RemoteConfig,
+    mut task_rt: TaskRuntime,
+    perms_cfg: PermsConfig,
+) -> Result<()> {
     let token_cloned = remote_cfg.token.clone();
     let rpc_task = async move {
         if !remote_cfg.rpc.enable {
@@ -183,25 +191,6 @@ async fn async_tasks(remote_cfg: RemoteConfig, mut task_rt: TaskRuntime) -> Resu
                             .await??;
                             if let Some(task_id) = profiling_task.id {
                                 let mut data = vec![];
-                                for ele in &perf_data.events {
-                                    let Some(event_type) = &ele.event_type else {
-                                        continue;
-                                    };
-
-                                    if let psh_proto::perf_data_proto::perf_event::EventType::MmapEvent(event)= event_type{
-                                        let Some(filename) = &event.filename else {
-                                            continue;
-                                        };
-
-                                        let data_type = DataType::ElfFile(psh_proto::ElfFile {
-                                            filename: filename.to_owned(),
-                                            build_id: event.build_id.clone(),
-                                            arch: std::env::consts::ARCH.to_string(),
-                                            bytes: tokio::fs::read(filename).await?
-                                        });
-                                        data.push(Data { data_type: Some(data_type) });
-                                    }
-                                }
                                 let dat = Data {
                                     data_type: Some(DataType::PerfData(perf_data)),
                                 };
@@ -209,7 +198,71 @@ async fn async_tasks(remote_cfg: RemoteConfig, mut task_rt: TaskRuntime) -> Resu
                                 client
                                     .export_data(psh_proto::ExportDataReq { task_id, data })
                                     .await?;
+                            } else {
+                                // TODO: analyze locally
                             }
+                        }
+                        WhichTask::UploadElf(upload_elf) => {
+                            let mut data = vec![];
+                            let file_path = PathBuf::from_str(&upload_elf.filename).unwrap();
+                            let allowed = perms_cfg
+                                .allowed_paths
+                                .iter()
+                                .any(|v| file_path.starts_with(v));
+                            if !allowed {
+                                if let Err(e) = client
+                                    .task_done(upload_elf.id, TaskStatus::AccessDeined)
+                                    .await
+                                {
+                                    tracing::error!("{e}");
+                                }
+                                continue;
+                            }
+
+                            let bytes = match tokio::fs::read(&upload_elf.filename).await {
+                                Ok(o) => o,
+                                Err(e) => {
+                                    if e.kind() == std::io::ErrorKind::NotFound {
+                                        if let Err(e) = client
+                                            .task_done(upload_elf.id, TaskStatus::NotFound)
+                                            .await
+                                        {
+                                            tracing::error!("{}", e);
+                                        }
+                                    }
+                                    continue;
+                                }
+                            };
+
+                            let build_id = services::sampling::get_build_id(&bytes)?;
+                            match (upload_elf.build_id, build_id) {
+                                (Some(tbid), Some(bid)) if tbid != bid.to_string() => {
+                                    if let Err(e) = client
+                                        .task_done(upload_elf.id, TaskStatus::BadBuildId)
+                                        .await
+                                    {
+                                        tracing::error!("{e}");
+                                    }
+                                    continue;
+                                }
+                                (_, _) => {}
+                            };
+
+                            let data_type = DataType::ElfFile(psh_proto::ElfFile {
+                                filename: upload_elf.filename.to_owned(),
+                                build_id: build_id.map(|v| v.to_string()),
+                                arch: std::env::consts::ARCH.to_string(),
+                                bytes,
+                            });
+                            data.push(Data {
+                                data_type: Some(data_type),
+                            });
+                            client
+                                .export_data(psh_proto::ExportDataReq {
+                                    task_id: upload_elf.id,
+                                    data,
+                                })
+                                .await?;
                         }
                     };
                 }
@@ -223,7 +276,9 @@ async fn async_tasks(remote_cfg: RemoteConfig, mut task_rt: TaskRuntime) -> Resu
                 .await?;
 
             if let Some(id) = task_rt.finished_task_id() {
-                let _ = client.task_done(id).await;
+                if let Err(e) = client.task_done(id, TaskStatus::Ok).await {
+                    tracing::error!("{e}");
+                }
             }
 
             tokio::time::sleep(duration).await;

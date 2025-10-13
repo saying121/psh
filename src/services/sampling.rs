@@ -1,4 +1,7 @@
+use std::{fmt::Display, str::FromStr};
+
 use anyhow::Result;
+use object::Object;
 use perf_event_rs::{
     EventScope, HardwareEvent,
     config::{Cpu, Process},
@@ -8,6 +11,51 @@ use psh_proto::{
     PerfDataProto,
     perf_data_proto::{PerfEvent, PerfFileAttr},
 };
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BuildId([u8; 20]);
+
+impl BuildId {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let mut b = [0; 20];
+        b.copy_from_slice(&bytes[..20]);
+        Self(b)
+    }
+}
+
+impl Display for BuildId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for byte in &self.0 {
+            f.write_fmt(format_args!("{byte:02x}"))?;
+        }
+        Ok(())
+    }
+}
+
+impl FromStr for BuildId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let len = s.len();
+        if len > 40 {
+            anyhow::bail!("40");
+        }
+        let mut bytes = [0; 20];
+        for i in 0..len / 2 {
+            let hex_byte = &s[i * 2..i * 2 + 2];
+            let b = u8::from_str_radix(hex_byte, 16)
+                .map_err(|_| anyhow::anyhow!("Invalid build-id"))?;
+            bytes[i] = b;
+        }
+        Ok(Self(bytes))
+    }
+}
+
+pub fn get_build_id<'c>(content: &'c [u8]) -> Result<Option<BuildId>> {
+    let file: object::File<'c> = object::File::parse(content)?;
+    let build_id = file.build_id()?.map(BuildId::from_bytes);
+    Ok(build_id)
+}
 
 #[derive(Default)]
 pub struct Profiler {
@@ -125,4 +173,11 @@ impl Profiler {
         }
         Ok(())
     }
+}
+
+#[test]
+fn feature() {
+    let a = BuildId([0; 20]);
+    let id = BuildId::from_str(&a.to_string()).unwrap();
+    assert_eq!(a, id);
 }

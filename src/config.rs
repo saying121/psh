@@ -12,7 +12,10 @@
 // You should have received a copy of the GNU Lesser General Public License along with Performance Savior Home (PSH). If not,
 // see <https://www.gnu.org/licenses/>.
 
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use serde::Deserialize;
@@ -24,6 +27,12 @@ const TEMPLATE: &str = include_str!("../doc/config.toml");
 pub struct Config {
     pub daemon: DaemonConfig,
     pub remote: RemoteConfig,
+    pub perms: PermsConfig,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub struct PermsConfig {
+    pub allowed_paths: Vec<PathBuf>,
 }
 
 #[derive(Clone, Deserialize)]

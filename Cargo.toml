@@ -52,6 +52,7 @@ mimalloc = { workspace = true }
 nvml-wrapper = { workspace = true }
 perf-event-rs = { workspace = true }
 num_cpus = { workspace = true }
+object = { workspace = true }
 
 [lints]
 workspace = true
@@ -89,9 +90,10 @@ local-ip-address = "^0.6"
 TinyUFO = "0.4"
 crossbeam = "0.8"
 influxdb-line-protocol = "2"
-psh-proto = { git = "https://github.com/OptimatistOpenSource/psh-proto.git", rev = "c82356c52925ac0abf9cd93c7245c3518d78e096" }
+psh-proto = { git = "https://github.com/OptimatistOpenSource/psh-proto.git", rev = "5cf7cc9" }
 mimalloc = "0.1"
 nvml-wrapper = "0.10.0"
+object = "0.37"
 
 [workspace.lints.rust]
 
